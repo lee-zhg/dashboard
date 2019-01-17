@@ -2,9 +2,9 @@
 
 # Building a dashboard within IBM Cloud
 
-In this tutorial, you learn how to build dashboard with IBM Cloud services. There are many ways to develop a dashboard. This tutorial adds one more option to your collection.
+In this code pattern, you learn how to build dashboard with IBM Cloud services. There are many ways to develop a dashboard. This code pattern adds one more option to your collection.
 
-For optimal performance, all required data for the dashboard resides in a single DB2 database, an instance of DB2 Warehouse in IBM Cloud. At the time of this writing, the dashboard component of Watson Studio is limited to the following data sources.
+For optimal performance, all required data for the dashboard resides in a single DB2 database, an instance of DB2 Warehouse (formally dashDB) in IBM Cloud. At the time of this writing, the dashboard component of Watson Studio is limited to the following data sources.
 * CSV files
 * Connection to Db2 Warehouse on Cloud
 * Connection to Compose for PostgreSQL
@@ -13,7 +13,7 @@ For optimal performance, all required data for the dashboard resides in a single
 
 If you have multiple data sources, you may pre-process all your data and stage them in DB2 Warehouse instance through batch processes.
 
-When you complete this tutorial, you will understand how to:
+When you complete this code pattern, you will understand how to:
 * Build dashboard with Watson Studio
 * Configure DB2 Warehouse and populate sample data
 * Optionally, IBM Cloud Function which can help populate DB2 Warehouse from other data source
@@ -42,7 +42,7 @@ When you complete this tutorial, you will understand how to:
 
 ## DB2 Warehouse Configuration
 
-In this tutorial, all data required for the dashboard is stored in DB2 Warehouse instance. Before creating your dashboard, you'll create an instance of DB2 Warehouse, configure the instance, create tables and populate the tables.
+In this code pattern, all data required for the dashboard is stored in DB2 Warehouse instance. Before creating your dashboard, you'll create an instance of DB2 Warehouse, configure the instance, create tables and populate the tables.
 
 
 ### Creating an instance of DB2 Warehouse
@@ -149,7 +149,19 @@ To load sample data,
 12. Repeat the step 2 to 11 to load the contents in file sample/sales.txt into the table `SALES`.
 
 
-## Data Pre-processing Discussion
+### Viewing contents in DB2 Tables
+
+To view contents in DB2 tables,
+
+1. In the `IBM DB2 Warehouse on Cloud` window, from the top-right dropdown menu, select `EXPLORE` option.
+2. In the `Schema` pane on the left, highlight `DASHxxxxx` sechma.
+3. In the `Table` pane on the right, highlight table `SALES`.
+4. In the `Table definition` pane on the right, select `View Data`.
+5. 15 rows of data is displayed.
+6. Repeat step 3 and 5 to review table `INVENTORY`.
+
+
+## IBM Cloud Function and Data Pre-processing Discussion
 
 For simplicity, all data required for the dashboard resides in the DB2 Warehouse in IBM Cloud. In real world, you likely have multiple data sources at different location. 
 
@@ -158,6 +170,83 @@ At the time of the writing, the dashboard component of Watson Studio is limited 
 IBM Cloud Functions can be a good candidate for data pre-processing. It can help you process data in batch mode on schedule. It supports many run-time environment based on your skill set.
 
 IBM Cloud Functions (based on Apache OpenWhisk) is a Function-as-a-Service (FaaS) platform which executes functions in response to incoming events and costs nothing when not in use
+
+As different dashboard project may have different data sources, a sample use case is used in this section to illustrate how the data pre-prpcessing can be done via IBM Cloud Function. It may take inputs from multiple sources and populate your DB2 Warehouse instance. Populating DB2 Warehouse instance is the focus of this section.
+
+### Creating Action, Trigger and Rule
+
+To populate DB2 Warehouse instance via IBM Cloud Function,
+
+1. Install [IBM Cloud CLI](https://console.bluemix.net/docs/cli/reference/ibmcloud/download_cli.html#install_use) if necessary.
+1. INstall [IBM Install the Cloud Functions Plugin](https://console.bluemix.net/openwhisk/learn/cli) if necesaary.
+1. Open a command window.
+1. Execute command `ibmcloud login`.
+1. Execute command `ibmcloud target --cf` to set org and space.
+1. Execute command `ibmcloud fn package create mydashboard` to create a package bundling related actions in IBM Cloud Function.
+1. Execute command `ibmcloud fn action create mydashboard/dataInsert dataInsert.js --kind nodejs:8` to create an action.
+1. Execute command `ibmcloud fn service bind dashDB mydashboard/dataInsert --instance Db2-Warehouse-lz` to bind the new action to credentials of your DB2 Warehouse instance `Db2-Warehouse-lz`.
+1. Execute command `ibmcloud fn action invoke mydashboard/dataInsert -r -v` to invoke the new action once. The action inserts two rows of new data into table `SALES`. You may verify this through `DB2 Warehouse` user interface.
+1. Execute the command below to create a time-based schedule trigger. In this example, it fires up in every two minutes, starts on 01/16/2019 morning and ends on 01/16/2019 midnight. 
+
+    ```
+    ibmcloud fn trigger create every-60-seconds \
+        --feed /whisk.system/alarms/alarm \
+        --param cron "*/60 * * * * *" \  
+        --param startDate "2019-01-16T00:00:00.000Z" \
+        --param stopDate "2019-01-16T23:59:00.000Z"
+    ```
+1. Execute the following command to create rule `invoke-periodically`,
+
+    ```
+    ibmcloud fn rule create \
+        invoke-periodically \
+        every-60-seconds \
+        mydashboard/dataInsert
+    ```
+Rules provide a mechanism for mapping triggers to actions in a many-to-many relationship. That is, one trigger can fire many independent actions and a single action can be triggered by many different triggers.
+
+This rule shows how the `every-60-seconds` trigger can be declaratively mapped to the `mydashboard/dataInsert` action. Notice that it's named somewhat abstractly so that if we wanted to use a different trigger - perhaps something that fires every five minute instead - we could still keep the same logical name.
+
+
+### Verifying Action, Trigger and Rule
+
+To verify that the IBM Cloud Function Action is fired every 60 seconds,
+
+1. Open a command/terminal window.
+1. Execute command `ibmcloud fn activation poll`. This command allows you to stream the console.log() statements in the action.
+1. Wait for a few minutes and observe log entries from the action.
+
+To verify additional data has been inserted into table 'SALES`,
+
+1. In the `IBM DB2 Warehouse on Cloud` window, from the top-right dropdown menu, select `EXPLORE` option.
+2. In the `Schema` pane on the left, highlight `DASHxxxxx` sechma.
+3. In the `Table` pane on the right, highlight table `SALES`.
+4. In the `Table definition` pane on the right, select `View Data`.
+5. 17+ rows of data is displayed.
+6. Refresh the user interface after a minute, the count of row the table is increased.
+
+
+### IBM Cloud Function Clean Up
+
+If you want to clean up action, trigger and rule,
+
+1. To remove rule `invoke-periodically`, execute commands
+
+    ```
+    ibmcloud fn rule disable invoke-periodically
+    ibmcloud fn rule delete invoke-periodically
+    ```
+1. to remove trigger `every-60-seconds`, execute command
+
+    ```
+    ibmcloud fn trigger delete every-60-seconds
+    ```
+
+1. To remove action `mydashboard/dataInsert`, execute command
+
+    ```
+    ibmcloud fn action delete mydashboard/dataInsert
+    ```
 
 
 ## Creating an instance of IBM Cognos Dashboard Embedded
