@@ -92,7 +92,7 @@ To create tables,
 ```
 --Create
 CREATE TABLE sales
-( sales_id VARCHAR(30) NOT NULL, CONSTRAINT sales_pk PRIMARY KEY (sales_id),
+( sales_id INT NOT NULL generated always as identity (start with 1000, increment by 1), CONSTRAINT sales_pk PRIMARY KEY (sales_id),
 amount DECIMAL(15,2) NOT NULL,
 period VARCHAR(50) NOT NULL,
 region VARCHAR(50) NOT NULL,
@@ -100,7 +100,7 @@ sales_person VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE inventory
-( inventory_id VARCHAR(50) NOT NULL, CONSTRAINT     inventory_pk PRIMARY KEY (inventory_id),
+( inventory_id INT NOT NULL generated always as identity (start with 1000, increment by 1), CONSTRAINT inventory_pk PRIMARY KEY (inventory_id),
 product VARCHAR(50) NOT NULL,
 quatity DECIMAL(15,2) NOT NULL,
 location VARCHAR(50) NOT NULL,
@@ -178,7 +178,7 @@ As different dashboard project may have different data sources, a sample use cas
 To populate DB2 Warehouse instance via IBM Cloud Function,
 
 1. Install [IBM Cloud CLI](https://console.bluemix.net/docs/cli/reference/ibmcloud/download_cli.html#install_use) if necessary.
-1. INstall [IBM Install the Cloud Functions Plugin](https://console.bluemix.net/openwhisk/learn/cli) if necesaary.
+1. Install [IBM Install the Cloud Functions Plugin](https://console.bluemix.net/openwhisk/learn/cli) if necesaary.
 1. Open a command window.
 1. Execute command `ibmcloud login`.
 1. Execute command `ibmcloud target --cf` to set org and space.
@@ -186,14 +186,12 @@ To populate DB2 Warehouse instance via IBM Cloud Function,
 1. Execute command `ibmcloud fn action create mydashboard/dataInsert dataInsert.js --kind nodejs:8` to create an action.
 1. Execute command `ibmcloud fn service bind dashDB mydashboard/dataInsert --instance Db2-Warehouse-lz` to bind the new action to credentials of your DB2 Warehouse instance `Db2-Warehouse-lz`.
 1. Execute command `ibmcloud fn action invoke mydashboard/dataInsert -r -v` to invoke the new action once. The action inserts two rows of new data into table `SALES`. You may verify this through `DB2 Warehouse` user interface.
-1. Execute the command below to create a time-based schedule trigger. In this example, it fires up in every two minutes, starts on 01/16/2019 morning and ends on 01/16/2019 midnight. 
+1. Execute the command below to create a time-based schedule trigger. In this example, it fires up in every one minutes, starts on 01/16/2019 morning and ends on 01/16/2019 midnight. 
 
     ```
     ibmcloud fn trigger create every-60-seconds \
         --feed /whisk.system/alarms/alarm \
-        --param cron "*/60 * * * * *" \  
-        --param startDate "2019-01-16T00:00:00.000Z" \
-        --param stopDate "2019-01-16T23:59:00.000Z"
+        --param cron "*/60 * * * * *"   
     ```
 1. Execute the following command to create rule `invoke-periodically`,
 
