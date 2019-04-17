@@ -16,12 +16,12 @@ If you have multiple data sources, you may pre-process all your data and stage t
 When you complete this code pattern, you will understand how to:
 * Build dashboard with Watson Studio
 * Configure DB2 Warehouse and populate sample data
-* Optionally, IBM Cloud Function which can help populate DB2 Warehouse from other data source
+* Deploy IBM Cloud Function which can help populate DB2 Warehouse from other data source
 
 
 ## Flow
 1. Administrator configures DB2 Warehouse instance and populate data.
-1. Optionally, developer devlopes code to pre-process data in multiple data sources and stage processed data in DB2 Warehouse.
+1. Developer devlopes code to pre-process data in multiple data sources and stage processed data in DB2 Warehouse.
 1. Developer builds dashboard through Watson Studio.
 1. Administrator grants access to the dashboard.
 1. End users view the dashboard.
@@ -30,14 +30,10 @@ When you complete this code pattern, you will understand how to:
 ## Included Components
 * [Watson Studio](https://dataplatform.cloud.ibm.com/docs/content/analyze-data/analytics-dashboard.html): With the analytics dashboard, you can build sophisticated visualizations of your analytics results, communicate the insights that you've discovered in your data on the dashboard and then share the dashboard with others.
 * [DB2 Warehouse](https://www.ibm.com/cloud/db2-warehouse-on-cloud): IBM Db2® Warehouse on Cloud is an elastic, fully managed cloud data warehouse service that's powered by IBM BLU Acceleration® technology for increased performance and optimization of analytics at a massive scale.
+* [IBM Cloud Function](https://cloud.ibm.com/openwhisk): IBM Cloud Functions (based on Apache OpenWhisk) is a Function-as-a-Service (FaaS) platform which executes functions in response to incoming events and costs nothing when not in use.
 
 ## Featured technologies
 * [Cognitive](https://developer.ibm.com/watson/): Watson is a cognitive technology that can think like a human.
-
-
-## Watch the Video
-
-[![](https://i.ytimg.com/vi/4IsYkTCHgzE/hqdefault.jpg)](https://www.youtube.com/watch?v=4IsYkTCHgzE)
 
 
 ## DB2 Warehouse Configuration
